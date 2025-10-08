@@ -1,0 +1,1 @@
+..\tp\bin\tpc -B -$R+ -$S+ -$Q+ -$D+ -$L+ Demo.pas
