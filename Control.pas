@@ -117,7 +117,7 @@ begin
     Halt;
   end;
 
-  SetFillStyle(SolidFill, LightGray);
+  SetFillStyle(SolidFill, Brown);
   Bar(0, 0, GetMaxX, GetMaxY);
 
   FillChar(prevMouse, SizeOf(prevMouse), 0);

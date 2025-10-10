@@ -1,8 +1,9 @@
-uses Control, Button, Rect, CRT;
+uses Control, Window, Button, Rect, CRT;
 
 var
   ctrls: ControlIter;
   btn: PButton;
+  win: PWindow;
   r: TRect;
 
 procedure onClick; far;
@@ -13,6 +14,11 @@ begin
 end;
 
 begin
+  win := New(PWindow);
+  r.Assign(100, 300, 200, 150);
+  win^.Create(r, 'My Controls!');
+  ctrls.Add(win);
+
   btn := New(PButton);
   r.Assign(100, 100, 80, 24);
   btn^.Create(r, 'Beep');
