@@ -15,7 +15,7 @@ end;
 begin
   btn := New(PButton);
   r.Assign(100, 100, 80, 24);
-  btn^.Create(r, 'Click me');
+  btn^.Create(r, 'Beep');
   btn^.onClick := onClick;
   ctrls.Add(btn);
 

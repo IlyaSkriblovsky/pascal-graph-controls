@@ -18,6 +18,7 @@ type
         procedure Draw; virtual;
         procedure MouseDown; virtual;
         procedure MouseUp; virtual;
+        procedure Click; virtual;
     end;
 
 implementation
@@ -90,14 +91,15 @@ begin
 end;
 
 procedure TButton.MouseUp;
-var
-  typed: TOnClick;
 begin
   pressed := false;
   ShowCursor(false);
   Draw;
   ShowCursor(true);
+end;
 
+procedure TButton.Click;
+begin
   if Assigned(onClick)
   then onClick;
 end;

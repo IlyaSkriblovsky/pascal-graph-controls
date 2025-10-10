@@ -13,8 +13,8 @@ type
       procedure Add(control: PControl);
 
     private
-      _cur: PControl;
-      _next: PControlIter;
+      cur: PControl;
+      next: PControlIter;
   end;
 
   TControl = object
@@ -24,8 +24,13 @@ type
       procedure Draw; virtual;
       procedure MouseDown; virtual;
       procedure MouseUp; virtual;
+      procedure Click; virtual;
   end;
 
+var
+  mouseCapture: PControl;
+
+procedure InitControls;
 procedure DrawControls(controls: PControlIter);
 procedure RunControls(controls: PControlIter);
 
@@ -37,8 +42,8 @@ uses CRT, Graph, Mouse, Utils;
 
 constructor ControlIter.Create;
 begin
-  _cur := nil;
-  _next := nil;
+  cur := nil;
+  next := nil;
 end;
 
 procedure ControlIter.Add(control: PControl);
@@ -46,24 +51,29 @@ var
   iter: PControlIter;
 begin
   iter := @self;
-  while iter^._cur <> nil
-  do iter := iter^._next;
-  iter^._cur := control;
-  iter^._next := New(PControlIter);
-  iter^._next^.Create;
+  while iter^.cur <> nil
+  do iter := iter^.next;
+  iter^.cur := control;
+  iter^.next := New(PControlIter);
+  iter^.next^.Create;
 end;
 
 { UTILS }
+
+procedure InitControls;
+begin
+  mouseCapture := nil;
+end;
 
 procedure DrawControls(controls: PControlIter);
 var
   iter: PControlIter;
 begin
   iter := controls;
-  while iter^._cur <> nil do
+  while iter^.cur <> nil do
   begin
-    iter^._cur^.Draw;
-    iter := iter^._next;
+    iter^.cur^.Draw;
+    iter := iter^.next;
   end;
 end;
 
@@ -72,22 +82,24 @@ procedure OnMousePress(controls: PControlIter; x, y: integer);
 var iter: PControlIter;
 begin
   iter := controls;
-  while iter^._cur <> nil do
+  while iter^.cur <> nil do
   begin
-    if iter^._cur^.rect.ContainsPoint(x, y)
-    then iter^._cur^.MouseDown;
-    iter := iter^._next;
+    if iter^.cur^.rect.ContainsPoint(x, y)
+    then begin
+      mouseCapture := iter^.cur;
+      iter^.cur^.MouseDown;
+    end;
+    iter := iter^.next;
   end;
 end;
-procedure OnMouseRelease(controls: PControlIter; x, y: integer);
-var iter: PControlIter;
+procedure OnMouseRelease(x, y: integer);
 begin
-  iter := controls;
-  while iter^._cur <> nil do
-  begin
-    if iter^._cur^.rect.ContainsPoint(x, y)
-    then iter^._cur^.MouseUp;
-    iter := iter^._next;
+  if Assigned(mouseCapture)
+  then begin
+    if mouseCapture^.rect.ContainsPoint(x, y)
+    then mouseCapture^.Click;
+    mouseCapture^.MouseUp;
+    mouseCapture := nil;
   end;
 end;
 
@@ -106,7 +118,7 @@ begin
   end;
 
   SetFillStyle(SolidFill, LightGray);
-  Bar(0, 0, 640, 480);
+  Bar(0, 0, GetMaxX, GetMaxY);
 
   FillChar(prevMouse, SizeOf(prevMouse), 0);
   DrawControls(controls);
@@ -117,7 +129,7 @@ begin
     if mouse.left and not prevMouse.left
     then OnMousePress(controls, mouse.x, mouse.y);
     if not mouse.left and prevMouse.left
-    then OnMouseRelease(controls, mouse.x, mouse.y);
+    then OnMouseRelease(mouse.x, mouse.y);
     Move(mouse, prevMouse, SizeOf(mouse))
   end;
   CloseGraph;
@@ -125,16 +137,9 @@ end;
 
 { CONTROL }
 
-procedure TControl.Draw;
-begin
-end;
-
-procedure TControl.MouseDown;
-begin
-end;
-
-procedure TControl.MouseUp;
-begin
-end;
+procedure TControl.Draw; begin end;
+procedure TControl.MouseDown; begin end;
+procedure TControl.MouseUp; begin end;
+procedure TControl.Click; begin end;
 
 end.
