@@ -6,13 +6,23 @@ uses Rect;
 type
   PControl = ^TControl;
 
-  PControlIter = ^ControlIter;
-  ControlIter = object
+  TControlProc = procedure(control: PControl);
+  TControlWithPtrProc = procedure(control: PControl; ptr: Pointer);
+
+  PControlIter = ^TControlIter;
+  TControlIter = object
     public
       constructor Create;
-      procedure Add(control: PControl);
 
-    private
+      procedure Add(control: PControl);
+      function Remove(control: PControl; destroy: boolean): boolean;
+      procedure Clear(destroy: boolean);
+
+      function Length: integer;
+      procedure ForEach(proc: TControlProc);
+      procedure ForEachWithPtr(proc: TControlWithPtrProc; ptr: Pointer);
+
+    private 
       cur: PControl;
       next: PControlIter;
   end;
@@ -20,6 +30,8 @@ type
   TControl = object
     public
       rect: TRect;
+
+      destructor Destroy;
 
       procedure Draw; virtual;
       procedure MouseDown; virtual;
@@ -40,22 +52,96 @@ uses CRT, Graph, Mouse, Utils;
 
 { CONTROL LIST }
 
-constructor ControlIter.Create;
+constructor TControlIter.Create;
 begin
   cur := nil;
   next := nil;
 end;
 
-procedure ControlIter.Add(control: PControl);
-var
-  iter: PControlIter;
+procedure TControlIter.Add(control: PControl);
+var iter: PControlIter;
 begin
   iter := @self;
   while iter^.cur <> nil
   do iter := iter^.next;
   iter^.cur := control;
-  iter^.next := New(PControlIter);
-  iter^.next^.Create;
+  iter^.next := New(PControlIter, Create);
+end;
+
+function TControlIter.Remove(control: PControl; destroy: boolean): boolean;
+var
+  iter, tmp: PControlIter;
+begin
+  if cur = nil
+  then Remove := false
+  else if cur = control
+  then begin
+    Remove := true;
+    if destroy
+    then Dispose(cur, Destroy);
+    if Assigned(next)
+    then begin
+      tmp := next;
+      cur := tmp^.cur;
+      next := tmp^.next;
+      Dispose(tmp);
+    end
+    else begin
+      if destroy
+      then Dispose(cur, Destroy);
+      cur := nil;
+    end;
+  end
+  else if Assigned(next)
+  then begin
+    Remove := next^.Remove(control, destroy);
+  end
+  else Remove := false;
+end;
+
+procedure TControlIter.Clear(destroy: boolean);
+begin
+  while cur <> nil
+  do Remove(cur, destroy);
+end;
+
+procedure TControlIter.ForEach(proc: TControlProc);
+var
+  iter: PControlIter;
+begin
+  iter := @self;
+  while iter^.cur <> nil
+  do begin
+    proc(iter^.cur);
+    iter := iter^.next;
+  end;
+end;
+
+procedure TControlIter.ForEachWithPtr(proc: TControlWithPtrProc; ptr: Pointer);
+var
+  iter: PControlIter;
+begin
+  iter := @self;
+  while iter^.cur <> nil
+  do begin
+    proc(iter^.cur, ptr);
+    iter := iter^.next;
+  end;
+end;
+
+function TControlIter.Length: integer;
+var
+  iter: PControlIter;
+  len: integer;
+begin
+  len := 0;
+  iter := @self;
+  while iter^.cur <> nil
+  do begin
+    Inc(len);
+    iter := iter^.next;
+  end;
+  Length := len;
 end;
 
 { UTILS }
@@ -137,6 +223,7 @@ end;
 
 { CONTROL }
 
+destructor TControl.Destroy; begin end;
 procedure TControl.Draw; begin end;
 procedure TControl.MouseDown; begin end;
 procedure TControl.MouseUp; begin end;

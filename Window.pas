@@ -1,11 +1,11 @@
 unit Window;
 
 interface
-uses Control, Rect;
+uses Control, Rect, Parent;
 
 type
   PWindow = ^TWindow;
-  TWindow = object(TControl)
+  TWindow = object(TParent)
     public
       title: string;
 
@@ -19,13 +19,22 @@ uses Graph, Utils, Mouse;
 
 constructor TWindow.Create(rect_: TRect; title_: string);
 begin
+  TParent.Create;
   rect := rect_;
   title := title_;
+end;
+
+procedure DrawChild(control: PControl); far;
+begin
+  control^.Draw;
 end;
 
 procedure TWindow.Draw;
 const
   captionWidth = 18;
+
+var
+  viewPort: ViewPortType;
 
 begin
   with rect do begin
@@ -57,6 +66,10 @@ begin
 
     SetFillStyle(SolidFill, LightGray);
     Bar(x+3, y+3+captionWidth, x+width-3, y+height-3);
+
+    SetInnerViewport(viewPort, x+3, y+3+captionWidth, x+width-3, y+height-3, ClipOn);
+    children.ForEach(DrawChild);
+    SetViewSettings(viewPort);
   end;
 end;
 

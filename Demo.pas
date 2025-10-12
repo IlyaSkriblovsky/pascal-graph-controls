@@ -1,7 +1,7 @@
-uses Control, Window, Button, Rect, CRT;
+uses Control, Window, Button, Rect, CRT, Parent;
 
 var
-  ctrls: ControlIter;
+  ctrls: TControlIter;
   btn: PButton;
   win: PWindow;
   r: TRect;
@@ -14,20 +14,18 @@ begin
 end;
 
 begin
-  win := New(PWindow);
   r.Assign(100, 300, 200, 150);
-  win^.Create(r, 'My Controls!');
+  win := New(PWindow, Create(r, 'My Controls!'));
   ctrls.Add(win);
 
-  btn := New(PButton);
-  r.Assign(100, 100, 80, 24);
-  btn^.Create(r, 'Beep');
+  r.Assign(30, 30, 80, 24);
+  btn := New(PButton, Create(r, 'Beep'));
   btn^.onClick := onClick;
-  ctrls.Add(btn);
+  { ctrls.Add(btn); }
+  win^.AddChild(btn);
 
-  btn := New(PButton);
   r.Assign(200, 100, 120, 24);
-  btn^.Create(r, 'Don''t click');
+  btn := New(PButton, Create(r, 'Don''t click'));
   ctrls.Add(btn);
 
   RunControls(@ctrls);

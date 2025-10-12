@@ -33,6 +33,8 @@ begin
 end;
 
 procedure TButton.Draw;
+var
+  viewPort: ViewPortType;
 begin
   with rect do begin
     if pressed
@@ -69,15 +71,15 @@ begin
       Bar(x+1, y+1, x+width-2, y+height-2);
     end;
 
-    SetColor(Black);
-    SetViewPort(x+2, y+2, x+width-2, y+height-2, ClipOn);
+    SetInnerViewport(viewPort, x+2, y+2, x+width-2, y+height-2, ClipOn);
     SetTextJustify(LeftText, CenterText);
+    SetColor(Black);
     OutTextXY(
       MaxI(0, (width - TextWidth(title)) div 2) + integer(pressed),
       height div 2 -1 + integer(pressed),
       title
     );
-    SetViewPort(0, 0, GetMaxX, GetMaxY, ClipOff);
+    SetViewSettings(viewPort);
   end;
 end;
 
