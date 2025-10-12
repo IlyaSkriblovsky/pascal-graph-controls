@@ -1,7 +1,7 @@
 unit Window;
 
 interface
-uses Control, Rect, Parent;
+uses Control, Rect;
 
 type
   PWindow = ^TWindow;
@@ -9,24 +9,28 @@ type
     public
       title: string;
 
-      constructor Create(rect_: TRect; title_: string);
+      constructor Create(x, y, width, height: integer; title_: string);
 
+      procedure GetMargins(var margins: TMargins); virtual;
       procedure Draw; virtual;
   end;
 
 implementation
 uses Graph, Utils, Mouse;
 
-constructor TWindow.Create(rect_: TRect; title_: string);
+constructor TWindow.Create(x, y, width, height: integer; title_: string);
 begin
   TParent.Create;
-  rect := rect_;
+  rect.Assign(x, y, width, height);
   title := title_;
 end;
 
-procedure DrawChild(control: PControl); far;
+procedure TWindow.GetMargins(var margins: TMargins);
 begin
-  control^.Draw;
+  margins.left := 3;
+  margins.top := 3 + 18;
+  margins.right := 3;
+  margins.bottom := 3;
 end;
 
 procedure TWindow.Draw;
@@ -59,16 +63,16 @@ begin
     Bar(x+3, y+3, x+width-3, y+3+captionWidth);
 
     SetColor(White);
-    SetViewPort(x+3, y+3, x+width-3, y+3+captionWidth, ClipOn);
+    SetInnerViewport(viewPort, x+3, y+3, x+width-3, y+3+captionWidth, ClipOn);
     SetTextJustify(LeftText, CenterText);
     OutTextXY(2, captionWidth div 2, title);
-    SetViewPort(0, 0, GetMaxX, GetMaxY, ClipOff);
+    SetViewSettings(viewPort);
 
     SetFillStyle(SolidFill, LightGray);
     Bar(x+3, y+3+captionWidth, x+width-3, y+height-3);
 
-    SetInnerViewport(viewPort, x+3, y+3+captionWidth, x+width-3, y+height-3, ClipOn);
-    children.ForEach(DrawChild);
+    SetRelativeViewport(viewPort);
+    TParent.Draw;
     SetViewSettings(viewPort);
   end;
 end;

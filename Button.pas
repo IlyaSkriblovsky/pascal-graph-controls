@@ -13,20 +13,20 @@ type
       pressed: boolean;
       onClick: TOnClick;
 
-      constructor Create(rect_: TRect; title_: string);
+      constructor Create(x, y, width, height: integer; title_: string);
 
       procedure Draw; virtual;
-      procedure MouseDown; virtual;
-      procedure MouseUp; virtual;
+      procedure MouseDown(x, y: integer); virtual;
+      procedure MouseUp(x, y: integer); virtual;
       procedure Click; virtual;
   end;
 
 implementation
 uses Graph, Utils, Mouse;
 
-constructor TButton.Create(rect_: TRect; title_: string);
+constructor TButton.Create(x, y, width, height: integer; title_: string);
 begin
-  rect := rect_;
+  rect.Assign(x, y, width, height);
   title := title_;
   pressed := false;
   onClick := nil;
@@ -83,19 +83,19 @@ begin
   end;
 end;
 
-procedure TButton.MouseDown;
+procedure TButton.MouseDown(x, y: integer);
 begin
   pressed := true;
   ShowCursor(false);
-  Draw;
+  Redraw;
   ShowCursor(true);
 end;
 
-procedure TButton.MouseUp;
+procedure TButton.MouseUp(x, y: integer);
 begin
   pressed := false;
   ShowCursor(false);
-  Draw;
+  Redraw;
   ShowCursor(true);
 end;
 

@@ -1,10 +1,11 @@
 unit Control;
 
 interface
-uses Rect;
+uses Rect, Graph;
 
 type
   PControl = ^TControl;
+  PParent = ^TParent;
 
   TControlProc = procedure(control: PControl);
   TControlWithPtrProc = procedure(control: PControl; ptr: Pointer);
@@ -31,24 +32,45 @@ type
     public
       rect: TRect;
 
+      constructor Create;
       destructor Destroy;
 
       procedure Draw; virtual;
-      procedure MouseDown; virtual;
-      procedure MouseUp; virtual;
+      procedure Redraw;
+      procedure MouseDown(x, y: integer); virtual;
+      procedure MouseUp(x, y: integer); virtual;
       procedure Click; virtual;
+
+    private
+      _parent: PParent;
   end;
 
-var
-  mouseCapture: PControl;
+  TParent = object(TControl)
+    public
+      constructor Create;
+      destructor Destroy;
 
-procedure InitControls;
-procedure DrawControls(controls: PControlIter);
-procedure RunControls(controls: PControlIter);
+      procedure GetMargins(var margins: TMargins); virtual;
+
+      procedure AddChild(control: PControl);
+      procedure RemoveChild(control: PControl);
+
+      procedure Draw; virtual;
+
+      procedure SetAbsoluteViewport;
+      procedure SetRelativeViewport(var viewPort: ViewPortType);
+
+      procedure MouseDown(x, y: integer); virtual;
+      procedure MouseUp(x, y: integer); virtual;
+
+    private
+      children: TControlIter;
+      mouseCapture: PControl;
+  end;
 
 
 implementation
-uses CRT, Graph, Mouse, Utils;
+uses CRT, Mouse, Utils;
 
 { CONTROL LIST }
 
@@ -144,89 +166,158 @@ begin
   Length := len;
 end;
 
-{ UTILS }
+{ CONTROL }
 
-procedure InitControls;
+constructor TControl.Create;
 begin
+  _parent := nil;
+end;
+
+destructor TControl.Destroy; begin end;
+procedure TControl.Draw; begin end;
+procedure TControl.MouseDown(x, y: integer); begin end;
+procedure TControl.MouseUp(x, y: integer); begin end;
+procedure TControl.Click; begin end;
+
+procedure TControl.Redraw;
+begin
+  if Assigned(_parent)
+  then _parent^.SetAbsoluteViewport;
+  Draw;
+end;
+
+{ PARENT }
+
+type
+  TPointAndCapture = record
+    x, y: integer;
+    capture: PControl;
+  end;
+
+constructor TParent.Create;
+begin
+  children.Create;
   mouseCapture := nil;
 end;
 
-procedure DrawControls(controls: PControlIter);
+destructor TParent.Destroy;
+begin
+  children.Clear(true);
+end;
+
+procedure TParent.GetMargins(var margins: TMargins);
+begin
+  FillChar(margins, SizeOf(margins), 0);
+end;
+
+procedure TParent.AddChild(control: PControl);
+begin
+  control^._parent := @self;
+  children.Add(control);
+end;
+
+procedure TParent.RemoveChild(control: PControl);
+begin
+  control^._parent := nil;
+  children.Remove(control, true);
+end;
+
+procedure DrawChild(control: PControl); far;
+begin
+  control^.Draw;
+end;
+
+procedure TParent.Draw;
+begin
+  children.ForEach(DrawChild);
+end;
+
+procedure TParent.SetAbsoluteViewport;
 var
-  iter: PControlIter;
+  viewPort: ViewPortType;
+  margins: TMargins;
 begin
-  iter := controls;
-  while iter^.cur <> nil do
-  begin
-    iter^.cur^.Draw;
-    iter := iter^.next;
+  GetMargins(margins);
+
+  if Assigned(_parent)
+  then begin
+    _parent^.SetAbsoluteViewport;
+    SetInnerViewport(
+      viewPort,
+      rect.x+margins.left,
+      rect.y+margins.top,
+      rect.x+rect.width-margins.right,
+      rect.y+rect.height-margins.bottom,
+      ClipOn
+    );
+  end
+  else begin
+    SetViewPort(
+      rect.x+margins.left,
+      rect.y+margins.top,
+      rect.x+rect.width-margins.right,
+      rect.y+rect.height-margins.bottom,
+      ClipOn
+    );
   end;
 end;
 
-
-procedure OnMousePress(controls: PControlIter; x, y: integer);
-var iter: PControlIter;
+procedure TParent.SetRelativeViewport(var viewPort: ViewPortType);
+var
+  margin: TMargins;
 begin
-  iter := controls;
-  while iter^.cur <> nil do
-  begin
-    if iter^.cur^.rect.ContainsPoint(x, y)
-    then begin
-      mouseCapture := iter^.cur;
-      iter^.cur^.MouseDown;
-    end;
-    iter := iter^.next;
+  GetMargins(margin);
+  SetInnerViewport(
+    viewPort,
+    rect.x+margin.left,
+    rect.y+margin.top,
+    rect.x+rect.width-margin.right,
+    rect.y+rect.height-margin.bottom,
+    ClipOn
+  );
+end;
+
+procedure ChildMouseDown(control: PControl; ptr: Pointer); far;
+var
+  point: ^TPointAndCapture;
+begin
+  point := ptr;
+  if control^.rect.ContainsPoint(point^.x, point^.y)
+  then begin
+    point^.capture := control;
+    control^.MouseDown(point^.x - control^.rect.x, point^.y - control^.rect.y);
   end;
 end;
-procedure OnMouseRelease(x, y: integer);
+
+procedure TParent.MouseDown(x, y: integer);
+var
+  pointAndCapture: TPointAndCapture;
+  margins: TMargins;
+begin
+  GetMargins(margins);
+  pointAndCapture.x := x - margins.left;
+  pointAndCapture.y := y - margins.top;
+  pointAndCapture.capture := nil;
+  children.ForEachWithPtr(ChildMouseDown, @pointAndCapture);
+  mouseCapture := pointAndCapture.capture;
+end;
+
+procedure TParent.MouseUp(x, y: integer);
+var
+  margins: TMargins;
 begin
   if Assigned(mouseCapture)
   then begin
-    if mouseCapture^.rect.ContainsPoint(x, y)
+    GetMargins(margins);
+    if mouseCapture^.rect.ContainsPoint(x - margins.left, y - margins.top)
     then mouseCapture^.Click;
-    mouseCapture^.MouseUp;
+    mouseCapture^.MouseUp(
+      x - mouseCapture^.rect.x - margins.left, 
+      y - mouseCapture^.rect.y - margins.top
+    );
     mouseCapture := nil;
   end;
 end;
 
-procedure RunControls(controls: PControlIter);
-var
-  Driver, Mode: Integer;
-  prevMouse, mouse: MouseState;
-
-begin
-  Driver := Detect;
-  InitGraph(Driver, Mode, 'c:\tp\bgi');
-  if GraphResult <> grOk then
-  begin
-    WriteLn('Can''t initialize graphics mode');
-    Halt;
-  end;
-
-  SetFillStyle(SolidFill, Brown);
-  Bar(0, 0, GetMaxX, GetMaxY);
-
-  FillChar(prevMouse, SizeOf(prevMouse), 0);
-  DrawControls(controls);
-  ShowCursor(true);
-  while not KeyPressed
-  do begin
-    GetMouseState(mouse);
-    if mouse.left and not prevMouse.left
-    then OnMousePress(controls, mouse.x, mouse.y);
-    if not mouse.left and prevMouse.left
-    then OnMouseRelease(mouse.x, mouse.y);
-    Move(mouse, prevMouse, SizeOf(mouse))
-  end;
-  CloseGraph;
-end;
-
-{ CONTROL }
-
-destructor TControl.Destroy; begin end;
-procedure TControl.Draw; begin end;
-procedure TControl.MouseDown; begin end;
-procedure TControl.MouseUp; begin end;
-procedure TControl.Click; begin end;
 
 end.

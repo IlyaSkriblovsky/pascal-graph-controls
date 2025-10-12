@@ -14,6 +14,13 @@ type
     function ContainsPoint(x_, y_: integer): boolean;
   end;
 
+  TMargins = object
+    left: integer;
+    top: integer;
+    right: integer;
+    bottom: integer;
+  end;
+
 implementation
 
 procedure TRect.Assign(x_, y_, width_, height_: integer);
