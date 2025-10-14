@@ -1,0 +1,1 @@
+- [ ] Currently we deal with viewports and offsets in two distinct places: Draw methods and mouse handling. Would be nice to unify that.

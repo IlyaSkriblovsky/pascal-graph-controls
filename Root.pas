@@ -28,6 +28,7 @@ end;
 
 procedure TRoot.Draw;
 begin
+  SetViewPort(0, 0, GetMaxX, GetMaxY, ClipOff);
   SetFillStyle(SolidFill, Brown);
   Bar(0, 0, GetMaxX, GetMaxY);
 
@@ -62,6 +63,7 @@ begin
     then MouseUp(mouse.x, mouse.y);
     Move(mouse, prevMouse, SizeOf(mouse))
   end;
+
   CloseGraph;
 end;
 

@@ -4,14 +4,12 @@ interface
 uses Control, Rect;
 
 type
-  TOnClick = procedure;
-
   PButton = ^TButton;
   TButton = object(TControl)
     public
       title: string;
       pressed: boolean;
-      onClick: TOnClick;
+      onClick: procedure;
 
       constructor Create(x, y, width, height: integer; title_: string);
 
@@ -26,6 +24,7 @@ uses Graph, Utils, Mouse;
 
 constructor TButton.Create(x, y, width, height: integer; title_: string);
 begin
+  TControl.Create;
   rect.Assign(x, y, width, height);
   title := title_;
   pressed := false;
@@ -35,6 +34,7 @@ end;
 procedure TButton.Draw;
 var
   viewPort: ViewPortType;
+  textOffset: integer;
 begin
   with rect do begin
     if pressed
@@ -74,9 +74,10 @@ begin
     SetInnerViewport(viewPort, x+2, y+2, x+width-2, y+height-2, ClipOn);
     SetTextJustify(LeftText, CenterText);
     SetColor(Black);
+    textOffset := integer(pressed)*2;
     OutTextXY(
-      MaxI(0, (width - TextWidth(title)) div 2) + integer(pressed),
-      height div 2 -1 + integer(pressed),
+      MaxI(0, (width - TextWidth(title)) div 2) + textOffset,
+      height div 2 -1 + textOffset,
       title
     );
     SetViewSettings(viewPort);
@@ -86,17 +87,13 @@ end;
 procedure TButton.MouseDown(x, y: integer);
 begin
   pressed := true;
-  ShowCursor(false);
   Redraw;
-  ShowCursor(true);
 end;
 
 procedure TButton.MouseUp(x, y: integer);
 begin
   pressed := false;
-  ShowCursor(false);
   Redraw;
-  ShowCursor(true);
 end;
 
 procedure TButton.Click;

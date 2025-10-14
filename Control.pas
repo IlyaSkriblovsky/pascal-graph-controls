@@ -9,6 +9,7 @@ type
 
   TControlProc = procedure(control: PControl);
   TControlWithPtrProc = procedure(control: PControl; ptr: Pointer);
+  TControlPredicate = function(control: PControl): boolean;
 
   PControlIter = ^TControlIter;
   TControlIter = object
@@ -22,6 +23,8 @@ type
       function Length: integer;
       procedure ForEach(proc: TControlProc);
       procedure ForEachWithPtr(proc: TControlWithPtrProc; ptr: Pointer);
+      procedure ForEachIf(cond: TControlPredicate; proc: TControlProc);
+      procedure ForEachIfWithPtr(cond: TControlPredicate; proc: TControlWithPtrProc; ptr: Pointer);
 
     private 
       cur: PControl;
@@ -36,17 +39,25 @@ type
       destructor Destroy;
 
       procedure Draw; virtual;
-      procedure Redraw;
+      procedure Redraw; virtual;
       procedure MouseDown(x, y: integer); virtual;
       procedure MouseUp(x, y: integer); virtual;
       procedure Click; virtual;
 
+      procedure SetParent(parent: PParent);
+      function GetParent: PParent;
+      procedure SetObeysParentMargins(obeys: boolean);
+      function ObeysParentMargins: boolean;
+
     private
       _parent: PParent;
+      _obeysParentMargins: boolean;
   end;
 
   TParent = object(TControl)
     public
+      mouseCapture: PControl;
+
       constructor Create;
       destructor Destroy;
 
@@ -57,15 +68,14 @@ type
 
       procedure Draw; virtual;
 
-      procedure SetAbsoluteViewport;
-      procedure SetRelativeViewport(var viewPort: ViewPortType);
+      procedure SetAbsoluteViewport(withMargins: boolean);
+      procedure SetRelativeViewport(var viewPort: ViewPortType; withMargins: boolean);
 
       procedure MouseDown(x, y: integer); virtual;
       procedure MouseUp(x, y: integer); virtual;
 
     private
       children: TControlIter;
-      mouseCapture: PControl;
   end;
 
 
@@ -128,27 +138,39 @@ begin
 end;
 
 procedure TControlIter.ForEach(proc: TControlProc);
+begin
+  ForEachIf(nil, proc);
+end;
+
+procedure TControlIter.ForEachIf(cond: TControlPredicate; proc: TControlProc);
 var
   iter: PControlIter;
 begin
   iter := @self;
   while iter^.cur <> nil
   do begin
-    proc(iter^.cur);
+    if not Assigned(cond) or cond(iter^.cur)
+    then proc(iter^.cur);
+    iter := iter^.next;
+  end;
+end;
+
+procedure TControlIter.ForEachIfWithPtr(cond: TControlPredicate; proc: TControlWithPtrProc; ptr: Pointer);
+var
+  iter: PControlIter;
+begin
+  iter := @self;
+  while iter^.cur <> nil
+  do begin
+    if not Assigned(cond) or cond(iter^.cur)
+    then proc(iter^.cur, ptr);
     iter := iter^.next;
   end;
 end;
 
 procedure TControlIter.ForEachWithPtr(proc: TControlWithPtrProc; ptr: Pointer);
-var
-  iter: PControlIter;
 begin
-  iter := @self;
-  while iter^.cur <> nil
-  do begin
-    proc(iter^.cur, ptr);
-    iter := iter^.next;
-  end;
+  ForEachIfWithPtr(nil, proc, ptr);
 end;
 
 function TControlIter.Length: integer;
@@ -171,6 +193,27 @@ end;
 constructor TControl.Create;
 begin
   _parent := nil;
+  _obeysParentMargins := true;
+end;
+
+procedure TControl.SetParent(parent: PParent);
+begin
+  _parent := parent;
+end;
+
+function TControl.GetParent: PParent;
+begin
+  GetParent := _parent;
+end;
+
+procedure TControl.SetObeysParentMargins(obeys: boolean);
+begin
+  _obeysParentMargins := obeys;
+end;
+
+function TControl.ObeysParentMargins: boolean;
+begin
+  ObeysParentMargins := _obeysParentMargins;
 end;
 
 destructor TControl.Destroy; begin end;
@@ -182,8 +225,10 @@ procedure TControl.Click; begin end;
 procedure TControl.Redraw;
 begin
   if Assigned(_parent)
-  then _parent^.SetAbsoluteViewport;
+  then _parent^.SetAbsoluteViewport(_obeysParentMargins);
+  ShowCursor(false);
   Draw;
+  ShowCursor(true);
 end;
 
 { PARENT }
@@ -227,21 +272,45 @@ begin
   control^.Draw;
 end;
 
-procedure TParent.Draw;
+function ControlObeysMargins(control: PControl): boolean; far;
 begin
-  children.ForEach(DrawChild);
+  ControlObeysMargins := control^.ObeysParentMargins;
+end;
+function ControlDoesntObeyMargins(control: PControl): boolean; far;
+begin
+  ControlDoesntObeyMargins := not control^.ObeysParentMargins;
 end;
 
-procedure TParent.SetAbsoluteViewport;
+procedure TParent.Draw;
+var
+  viewPort: ViewPortType;
+begin
+  SetRelativeViewport(viewPort, false);
+  children.ForEachIf(ControlDoesntObeyMargins, DrawChild);
+  SetViewSettings(viewPort);
+
+  SetRelativeViewport(viewPort, true);
+  children.ForEachIf(ControlObeysMargins, DrawChild);
+  SetViewSettings(viewPort);
+end;
+
+procedure TParent.SetAbsoluteViewport(withMargins: boolean);
 var
   viewPort: ViewPortType;
   margins: TMargins;
 begin
-  GetMargins(margins);
+  if withMargins
+  then GetMargins(margins)
+  else begin
+    margins.left := 0;
+    margins.top := 0;
+    margins.right := 0;
+    margins.bottom := 0;
+  end;
 
   if Assigned(_parent)
   then begin
-    _parent^.SetAbsoluteViewport;
+    _parent^.SetAbsoluteViewport(_obeysParentMargins);
     SetInnerViewport(
       viewPort,
       rect.x+margins.left,
@@ -262,17 +331,24 @@ begin
   end;
 end;
 
-procedure TParent.SetRelativeViewport(var viewPort: ViewPortType);
+procedure TParent.SetRelativeViewport(var viewPort: ViewPortType; withMargins: boolean);
 var
-  margin: TMargins;
+  margins: TMargins;
 begin
-  GetMargins(margin);
+  if withMargins
+  then GetMargins(margins)
+  else begin
+    margins.left := 0;
+    margins.top := 0;
+    margins.right := 0;
+    margins.bottom := 0;
+  end;
   SetInnerViewport(
     viewPort,
-    rect.x+margin.left,
-    rect.y+margin.top,
-    rect.x+rect.width-margin.right,
-    rect.y+rect.height-margin.bottom,
+    rect.x + margins.left,
+    rect.y + margins.top,
+    rect.x + rect.width - margins.right,
+    rect.y + rect.height - margins.bottom,
     ClipOn
   );
 end;
@@ -294,11 +370,16 @@ var
   pointAndCapture: TPointAndCapture;
   margins: TMargins;
 begin
+  pointAndCapture.x := x;
+  pointAndCapture.y := y;
+  pointAndCapture.capture := nil;
+  children.ForEachIfWithPtr(ControlDoesntObeyMargins, ChildMouseDown, @pointAndCapture);
+
   GetMargins(margins);
   pointAndCapture.x := x - margins.left;
   pointAndCapture.y := y - margins.top;
-  pointAndCapture.capture := nil;
-  children.ForEachWithPtr(ChildMouseDown, @pointAndCapture);
+  children.ForEachIfWithPtr(ControlObeysMargins, ChildMouseDown, @pointAndCapture);
+
   mouseCapture := pointAndCapture.capture;
 end;
 
@@ -308,13 +389,21 @@ var
 begin
   if Assigned(mouseCapture)
   then begin
-    GetMargins(margins);
-    if mouseCapture^.rect.ContainsPoint(x - margins.left, y - margins.top)
-    then mouseCapture^.Click;
+    if mouseCapture^.ObeysParentMargins
+    then GetMargins(margins)
+    else begin
+      margins.left := 0;
+      margins.top := 0;
+      margins.right := 0;
+      margins.bottom := 0;
+    end;
+
     mouseCapture^.MouseUp(
       x - mouseCapture^.rect.x - margins.left, 
       y - mouseCapture^.rect.y - margins.top
     );
+    if mouseCapture^.rect.ContainsPoint(x - margins.left, y - margins.top)
+    then mouseCapture^.Click;
     mouseCapture := nil;
   end;
 end;
