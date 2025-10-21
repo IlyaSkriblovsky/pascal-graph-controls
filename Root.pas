@@ -13,8 +13,6 @@ type
 
       procedure Run;
 
-      {procedure MouseDown(x, y: integer); virtual;
-      procedure MouseUp; virtual;}
   end;
 
 implementation

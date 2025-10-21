@@ -241,6 +241,7 @@ type
 
 constructor TParent.Create;
 begin
+  TControl.Create;
   children.Create;
   mouseCapture := nil;
 end;
