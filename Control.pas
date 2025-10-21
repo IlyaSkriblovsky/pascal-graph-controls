@@ -34,6 +34,7 @@ type
   TControl = object
     public
       rect: TRect;
+      userData: Pointer;
 
       constructor Create;
       destructor Destroy;
@@ -194,6 +195,7 @@ constructor TControl.Create;
 begin
   _parent := nil;
   _obeysParentMargins := true;
+  userData := nil;
 end;
 
 procedure TControl.SetParent(parent: PParent);

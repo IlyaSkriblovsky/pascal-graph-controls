@@ -9,7 +9,7 @@ type
     public
       checked: boolean;
       title: string;
-      onChange: procedure;
+      onChange: procedure(sender: PCheckbox);
 
       constructor Create(x, y, width, height: integer; title_: string; checked_: boolean);
 
@@ -84,7 +84,7 @@ procedure TCheckbox.Click;
 begin
   checked := not checked;
   if Assigned(onChange)
-  then onChange;
+  then onChange(@self);
   Redraw;
 end;
 

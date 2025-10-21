@@ -17,6 +17,12 @@ type
       procedure MouseDown(x, y: integer); virtual;
       procedure MouseUp(x, y: integer); virtual;
       procedure Click; virtual;
+
+      function IsDisabled: boolean;
+      procedure SetDisabled(disabled: boolean);
+
+    private
+      _disabled: boolean;
   end;
 
 implementation
@@ -28,13 +34,25 @@ begin
   rect.Assign(x, y, width, height);
   title := title_;
   pressed := false;
+  _disabled := false;
   onClick := nil;
+end;
+
+function TButton.IsDisabled: boolean;
+begin
+  IsDisabled := _disabled;
+end;
+
+procedure TButton.SetDisabled(disabled: boolean);
+begin
+  _disabled := disabled;
 end;
 
 procedure TButton.Draw;
 var
   viewPort: ViewPortType;
   textOffset: integer;
+  textX, textY: integer;
 begin
   with rect do begin
     if pressed
@@ -73,32 +91,42 @@ begin
 
     SetInnerViewport(viewPort, x+2, y+2, x+width-2, y+height-2, ClipOn);
     SetTextJustify(LeftText, CenterText);
-    SetColor(Black);
     textOffset := integer(pressed)*2;
-    OutTextXY(
-      MaxI(0, (width - TextWidth(title)) div 2) + textOffset,
-      height div 2 -1 + textOffset,
-      title
-    );
+    textX := MaxI(0, (width - TextWidth(title)) div 2) + textOffset;
+    textY := height div 2 -1 + textOffset;
+    if _disabled
+    then begin
+      SetColor(White);
+      OutTextXY(textX+1, textY+1, title);
+      SetColor(DarkGray);
+    end
+    else SetColor(Black);
+    OutTextXY(textX, textY, title);
     SetViewSettings(viewPort);
   end;
 end;
 
 procedure TButton.MouseDown(x, y: integer);
 begin
-  pressed := true;
-  Redraw;
+  if not _disabled
+  then begin
+    pressed := true;
+    Redraw;
+  end;
 end;
 
 procedure TButton.MouseUp(x, y: integer);
 begin
-  pressed := false;
-  Redraw;
+  if not _disabled
+  then begin
+    pressed := false;
+    Redraw;
+  end;
 end;
 
 procedure TButton.Click;
 begin
-  if Assigned(onClick)
+  if not _disabled and Assigned(onClick)
   then onClick;
 end;
 

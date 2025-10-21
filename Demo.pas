@@ -19,6 +19,15 @@ begin
   r.Redraw;
 end;
 
+procedure OnCheckboxChange(sender: PCheckbox); far;
+var
+  btn: PButton;
+begin
+  btn := sender^.userData;
+  btn^.SetDisabled(not sender^.checked);
+  btn^.Redraw;
+end;
+
 function CreateWindow: PWindow;
 var
   win: PWindow;
@@ -30,9 +39,12 @@ begin
   win^.onClose := OnCloseWindow;
 
   btn := New(PButton, Create(30, 30, 80, 24, 'Click me'));
+  btn^.SetDisabled(true);
   win^.AddChild(btn);
 
   cbx := New(PCheckbox, Create(30, 70, 120, 13, 'Check me', false));
+  cbx^.userData := btn;
+  cbx^.onChange := OnCheckboxChange;
   win^.AddChild(cbx);
 
   r.AddChild(win);
