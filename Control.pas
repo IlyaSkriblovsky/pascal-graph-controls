@@ -360,10 +360,7 @@ var
 begin
   point := ptr;
   if control^.rect.ContainsPoint(point^.x, point^.y)
-  then begin
-    point^.capture := control;
-    control^.MouseDown(point^.x - control^.rect.x, point^.y - control^.rect.y);
-  end;
+  then point^.capture := control;
 end;
 
 procedure TParent.MouseDown(x, y: integer);
@@ -382,31 +379,36 @@ begin
   children.ForEachIfWithPtr(ControlObeysMargins, ChildMouseDown, @pointAndCapture);
 
   mouseCapture := pointAndCapture.capture;
+  if mouseCapture <> nil
+  then mouseCapture^.MouseDown(
+    x - margins.left - mouseCapture^.rect.x,
+    y - margins.top - mouseCapture^.rect.y
+  );
 end;
 
 procedure TParent.MouseUp(x, y: integer);
 var
   margins: TMargins;
 begin
-  if Assigned(mouseCapture)
-  then begin
-    if mouseCapture^.ObeysParentMargins
-    then GetMargins(margins)
-    else begin
-      margins.left := 0;
-      margins.top := 0;
-      margins.right := 0;
-      margins.bottom := 0;
-    end;
-
-    mouseCapture^.MouseUp(
-      x - mouseCapture^.rect.x - margins.left, 
-      y - mouseCapture^.rect.y - margins.top
-    );
-    if mouseCapture^.rect.ContainsPoint(x - margins.left, y - margins.top)
-    then mouseCapture^.Click;
-    mouseCapture := nil;
+  if not Assigned(mouseCapture)
+  then Exit;
+  
+  if mouseCapture^.ObeysParentMargins
+  then GetMargins(margins)
+  else begin
+    margins.left := 0;
+    margins.top := 0;
+    margins.right := 0;
+    margins.bottom := 0;
   end;
+
+  mouseCapture^.MouseUp(
+    x - mouseCapture^.rect.x - margins.left, 
+    y - mouseCapture^.rect.y - margins.top
+  );
+  if mouseCapture^.rect.ContainsPoint(x - margins.left, y - margins.top)
+  then mouseCapture^.Click;
+  mouseCapture := nil;
 end;
 
 
