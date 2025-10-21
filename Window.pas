@@ -125,7 +125,7 @@ begin
     SetColor(White);
     SetInnerViewport(viewPort, x+3, y+3, x+width-3, y+3+captionWidth, ClipOn);
     SetTextJustify(LeftText, CenterText);
-    OutTextXY(2, captionWidth div 2, title);
+    OutTextXY(4, captionWidth div 2, title);
     SetViewSettings(viewPort);
 
     SetFillStyle(SolidFill, LightGray);

@@ -20,7 +20,7 @@ type
   end;
 
 implementation
-uses Graph, Utils, Mouse;
+uses Graph, Utils;
 
 constructor TButton.Create(x, y, width, height: integer; title_: string);
 begin
