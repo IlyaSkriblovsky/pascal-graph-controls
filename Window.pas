@@ -146,7 +146,8 @@ begin
 
   if mouseCapture = nil
   then begin
-    if y < captionWidth
+    if (x >= 3) and (x <= rect.width - 3) 
+      and (y > 3) and (y < captionWidth+3)
     then begin
       HandleWindowMove;
     end;
@@ -180,13 +181,14 @@ var
 begin
   SetViewPort(0, 0, GetMaxX, GetMaxY, ClipOff);
 
-  GetMouseState(prevMouse);
-  offsetX := prevMouse.x - rect.x;
-  offsetY := prevMouse.y - rect.y;
+  GetMouseState(mouse);
+  offsetX := mouse.x - rect.x;
+  offsetY := mouse.y - rect.y;
 
   DrawContour(rect);
   while mouse.left
   do begin
+    Move(mouse, prevMouse, SizeOf(mouse));
     GetMouseState(mouse);
 
     if (mouse.x <> prevMouse.x) or (mouse.y <> prevMouse.y)
@@ -199,8 +201,6 @@ begin
       DrawContour(rect);
       ShowCursor(true);
     end;
-
-    Move(mouse, prevMouse, SizeOf(mouse));
   end;
 
   parent := GetParent;
