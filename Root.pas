@@ -26,7 +26,7 @@ end;
 procedure TRoot.Draw;
 begin
   SetViewPort(0, 0, GetMaxX, GetMaxY, ClipOff);
-  SetFillStyle(SolidFill, Brown);
+  SetFillStyle(CloseDotFill, DarkGray);
   Bar(0, 0, GetMaxX, GetMaxY);
 
   TParent.Draw;
