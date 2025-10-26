@@ -12,6 +12,8 @@ procedure SetInnerViewport(
 );
 procedure SetViewSettings(viewPort: ViewPortType);
 
+procedure WaitForVSync;
+
 implementation
 
 function MaxI(a, b: integer): integer;
@@ -34,6 +36,12 @@ end;
 procedure SetViewSettings(viewPort: ViewPortType);
 begin
   SetViewPort(viewPort.x1, viewPort.y1, viewPort.x2, viewPort.y2, viewPort.Clip);
+end;
+
+procedure WaitForVSync;
+begin
+  repeat
+  until (Port[$3DA] and 8) <> 0;
 end;
 
 end.

@@ -28,6 +28,9 @@ type
       procedure Draw; virtual;
 
       procedure MouseDown(x, y: integer); virtual;
+
+    private
+      procedure HandleWindowMove;
   end;
 
 implementation
@@ -140,6 +143,70 @@ end;
 procedure TWindow.MouseDown(x, y: integer);
 begin
   TParent.MouseDown(x, y);
+
+  if mouseCapture = nil
+  then begin
+    if y < captionWidth
+    then begin
+      HandleWindowMove;
+    end;
+  end;
+end;
+
+procedure DrawContour(rect: TRect);
+begin
+  SetWriteMode(XORPut);
+  SetColor(White);
+  SetLineStyle(UserBitLn, $AAAA, NormWidth);
+
+  with rect
+  do begin
+    Rectangle(x, y, x+width, y+height);
+    Rectangle(x+1, y+1, x+width-1, y+height-1);
+    Rectangle(x+2, y+2, x+width-2, y+height-2);
+  end;
+
+  SetLineStyle(SolidLn, 0, NormWidth);
+  SetWriteMode(CopyPut);
+end;
+
+
+procedure TWindow.HandleWindowMove;
+var
+  prevMouse, mouse: MouseState;
+  offsetX, offsetY: integer;
+  parent: PControl;
+
+begin
+  SetViewPort(0, 0, GetMaxX, GetMaxY, ClipOff);
+
+  GetMouseState(prevMouse);
+  offsetX := prevMouse.x - rect.x;
+  offsetY := prevMouse.y - rect.y;
+
+  DrawContour(rect);
+  while mouse.left
+  do begin
+    GetMouseState(mouse);
+
+    if (mouse.x <> prevMouse.x) or (mouse.y <> prevMouse.y)
+    then begin
+      ShowCursor(false);
+      DrawContour(rect);
+      rect.x := mouse.x - offsetX;
+      rect.y := mouse.y - offsetY;
+      WaitForVSync;
+      DrawContour(rect);
+      ShowCursor(true);
+    end;
+
+    Move(mouse, prevMouse, SizeOf(mouse));
+  end;
+
+  parent := GetParent;
+  if Assigned(parent)
+  then parent^.Redraw
+  else Redraw;
 end;
 
 end.

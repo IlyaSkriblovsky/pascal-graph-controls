@@ -12,7 +12,6 @@ type
       procedure Draw; virtual;
 
       procedure Run;
-
   end;
 
 implementation
