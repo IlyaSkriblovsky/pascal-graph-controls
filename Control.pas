@@ -1,7 +1,7 @@
 unit Control;
 
 interface
-uses Rect, Graph;
+uses Rect, Graph, DrawUtil;
 
 type
   PControl = ^TControl;
@@ -39,7 +39,8 @@ type
       constructor Create;
       destructor Destroy;
 
-      procedure Draw; virtual;
+      procedure SetDrawPos(var drawPos: TDrawPos);
+      procedure Draw(const drawPos: TDrawPos); virtual;
       procedure Redraw; virtual;
       procedure MouseDown(x, y: integer); virtual;
       procedure MouseUp(x, y: integer); virtual;
@@ -63,14 +64,12 @@ type
       destructor Destroy;
 
       procedure GetMargins(var margins: TMargins); virtual;
+      procedure SetDrawPosWithMargins(var drawPos: TDrawPos);
 
       procedure AddChild(control: PControl);
       procedure RemoveChild(control: PControl);
 
-      procedure Draw; virtual;
-
-      procedure SetAbsoluteViewport(withMargins: boolean);
-      procedure SetRelativeViewport(var viewPort: ViewPortType; withMargins: boolean);
+      procedure Draw(const drawPos: TDrawPos); virtual;
 
       procedure MouseDown(x, y: integer); virtual;
       procedure MouseUp(x, y: integer); virtual;
@@ -219,17 +218,28 @@ begin
 end;
 
 destructor TControl.Destroy; begin end;
-procedure TControl.Draw; begin end;
+procedure TControl.Draw(const drawPos: TDrawPos); begin end;
 procedure TControl.MouseDown(x, y: integer); begin end;
 procedure TControl.MouseUp(x, y: integer); begin end;
 procedure TControl.Click; begin end;
 
-procedure TControl.Redraw;
+procedure TControl.SetDrawPos(var drawPos: TDrawPos);
 begin
-  if Assigned(_parent)
-  then _parent^.SetAbsoluteViewport(_obeysParentMargins);
+  if not Assigned(_parent)
+  then drawPos.ResetToScreen
+  else if _obeysParentMargins
+  then _parent^.SetDrawPosWithMargins(drawPos)
+  else _parent^.SetDrawPos(drawPos);
+  drawPos.ClipRect(rect, drawPos);
+end;
+
+procedure TControl.Redraw;
+var
+  drawPos: TDrawPos;
+begin
+  SetDrawPos(drawPos);
   ShowCursor(false);
-  Draw;
+  Draw(drawPos);
   ShowCursor(true);
 end;
 
@@ -270,9 +280,14 @@ begin
   children.Remove(control, true);
 end;
 
-procedure DrawChild(control: PControl); far;
+procedure DrawChild(control: PControl; ptr: Pointer); far;
+var
+  drawPos: PDrawPos;
+  childDrawPos: TDrawPos;
 begin
-  control^.Draw;
+  drawPos := ptr;
+  drawPos^.ClipRect(control^.rect, childDrawPos);
+  control^.Draw(childDrawPos);
 end;
 
 function ControlObeysMargins(control: PControl): boolean; far;
@@ -284,75 +299,38 @@ begin
   ControlDoesntObeyMargins := not control^.ObeysParentMargins;
 end;
 
-procedure TParent.Draw;
+procedure TParent.Draw(const drawPos: TDrawPos);
 var
-  viewPort: ViewPortType;
-begin
-  SetRelativeViewport(viewPort, false);
-  children.ForEachIf(ControlDoesntObeyMargins, DrawChild);
-  SetViewSettings(viewPort);
-
-  SetRelativeViewport(viewPort, true);
-  children.ForEachIf(ControlObeysMargins, DrawChild);
-  SetViewSettings(viewPort);
-end;
-
-procedure TParent.SetAbsoluteViewport(withMargins: boolean);
-var
-  viewPort: ViewPortType;
+  drawPosWithMargins: TDrawPos;
   margins: TMargins;
 begin
-  if withMargins
-  then GetMargins(margins)
-  else begin
-    margins.left := 0;
-    margins.top := 0;
-    margins.right := 0;
-    margins.bottom := 0;
-  end;
+  children.ForEachIfWithPtr(ControlDoesntObeyMargins, DrawChild, @drawPos);
 
-  if Assigned(_parent)
-  then begin
-    _parent^.SetAbsoluteViewport(_obeysParentMargins);
-    SetInnerViewport(
-      viewPort,
-      rect.x+margins.left,
-      rect.y+margins.top,
-      rect.x+rect.width-margins.right,
-      rect.y+rect.height-margins.bottom,
-      ClipOn
-    );
-  end
-  else begin
-    SetViewPort(
-      rect.x+margins.left,
-      rect.y+margins.top,
-      rect.x+rect.width-margins.right,
-      rect.y+rect.height-margins.bottom,
-      ClipOn
-    );
-  end;
+  GetMargins(margins);
+  drawPos.Clip(
+    margins.left,
+    margins.top,
+    rect.width - margins.left - margins.right,
+    rect.height - margins.top - margins.bottom, 
+    drawPosWithMargins
+  );
+  children.ForEachIfWithPtr(ControlObeysMargins, DrawChild, @drawPosWithMargins);
 end;
 
-procedure TParent.SetRelativeViewport(var viewPort: ViewPortType; withMargins: boolean);
+
+procedure TParent.SetDrawPosWithMargins(var drawPos: TDrawPos);
 var
+  parentDrawPos: TDrawPos;
   margins: TMargins;
 begin
-  if withMargins
-  then GetMargins(margins)
-  else begin
-    margins.left := 0;
-    margins.top := 0;
-    margins.right := 0;
-    margins.bottom := 0;
-  end;
-  SetInnerViewport(
-    viewPort,
-    rect.x + margins.left,
-    rect.y + margins.top,
-    rect.x + rect.width - margins.right,
-    rect.y + rect.height - margins.bottom,
-    ClipOn
+  SetDrawPos(drawPos);
+  GetMargins(margins);
+  drawPos.Clip(
+    margins.left,
+    margins.top,
+    rect.width - margins.left - margins.right,
+    rect.height - margins.top - margins.bottom, 
+    drawPos
   );
 end;
 

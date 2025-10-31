@@ -1,20 +1,19 @@
 unit Utils;
 
 interface
-uses Graph;
 
+function MinI(a, b: integer): integer;
 function MaxI(a, b: integer): integer;
-
-procedure SetInnerViewport(
-  var viewPort: ViewPortType;
-  x1, y1, x2, y2: integer;
-  clip: boolean
-);
-procedure SetViewSettings(viewPort: ViewPortType);
-
-procedure WaitForVSync;
+function ClipI(value, minValue, maxValue: integer): integer;
 
 implementation
+
+function MinI(a, b: integer): integer;
+begin
+  if a < b
+  then MinI := a
+  else MinI := b;
+end;
 
 function MaxI(a, b: integer): integer;
 begin
@@ -23,25 +22,13 @@ begin
   else MaxI := b;
 end;
 
-procedure SetInnerViewport(
-  var viewPort: ViewPortType;
-  x1, y1, x2, y2: integer;
-  clip: boolean
-);
+function ClipI(value, minValue, maxValue: integer): integer;
 begin
-  GetViewSettings(viewPort);
-  SetViewPort(viewPort.x1+x1, viewPort.y1+y1, viewPort.x1+x2, viewPort.y1+y2, clip);
-end;
-
-procedure SetViewSettings(viewPort: ViewPortType);
-begin
-  SetViewPort(viewPort.x1, viewPort.y1, viewPort.x2, viewPort.y2, viewPort.Clip);
-end;
-
-procedure WaitForVSync;
-begin
-  repeat
-  until (Port[$3DA] and 8) <> 0;
+  if value < minValue
+  then ClipI := minValue
+  else if value > maxValue
+       then ClipI := maxValue
+       else ClipI := value;
 end;
 
 end.

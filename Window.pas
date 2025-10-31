@@ -1,7 +1,7 @@
 unit Window;
 
 interface
-uses Control, Rect, Button;
+uses Control, Rect, Button, DrawUtil;
 
 type
   PWindow = ^TWindow;
@@ -10,7 +10,7 @@ type
     public
       constructor Create(x, y, width, height: integer; window_: PWindow);
 
-      procedure Draw; virtual;
+      procedure Draw(const drawPos: TDrawPos); virtual;
       procedure Click; virtual;
 
     private
@@ -25,7 +25,7 @@ type
       constructor Create(x, y, width, height: integer; title_: string);
 
       procedure GetMargins(var margins: TMargins); virtual;
-      procedure Draw; virtual;
+      procedure Draw(const drawPos: TDrawPos); virtual;
 
       procedure MouseDown(x, y: integer); virtual;
 
@@ -52,23 +52,23 @@ begin
   SetObeysParentMargins(false);
 end;
 
-procedure TCloseButton.Draw;
+procedure TCloseButton.Draw(const drawPos: TDrawPos);
 var
-  viewPort: ViewPortType;
+  crossPos: TDrawPos;
   iconOffset: integer;
 begin
-  TButton.Draw;
-  with rect do begin
+  TButton.Draw(drawPos);
+
+  with rect
+  do begin
     iconOffset := integer(pressed);
-
     SetColor(Black);
-    SetInnerViewport(viewPort, x+3+iconOffset, y+3+iconOffset, x+width, y+height, ClipOn);
-    Line(0, 0, width-8, height-7);
-    Line(1, 0, width-7, height-7);
+    drawPos.Clip(3+iconOffset, 3+iconOffset, width-3-iconOffset, height-3-iconOffset, crossPos);
+    crossPos.Line(0, 0, width-8, height-7);
+    crossPos.Line(1, 0, width-7, height-7);
 
-    Line(width-8, 0, 0, height-7);
-    Line(width-7, 0, 1, height-7);
-    SetViewSettings(viewPort);
+    crossPos.Line(width-8, 0, 0, height-7);
+    crossPos.Line(width-7, 0, 1, height-7);
   end;
 end;
 
@@ -99,44 +99,41 @@ begin
   margins.bottom := 3;
 end;
 
-procedure TWindow.Draw;
+procedure TWindow.Draw(const drawPos: TDrawPos);
 var
-  viewPort: ViewPortType;
-
+  captionDrawPos: TDrawPos;
 begin
-  with rect do begin
+  with rect
+  do begin
     SetColor(LightGray);
-    Line(x, y, x+width-1, y);
-    Line(x, y, x, y+height-1);
+    drawPos.Line(0, 0, width-1, 0);
+    drawPos.Line(0, 0, 0, height-1);
     SetColor(White);
-    Line(x+1, y+1, x+width-2, y+1);
-    Line(x+1, y+1, x+1, y+height-2);
+    drawPos.Line(1, 1, width-2, 1);
+    drawPos.Line(1, 1, 1, height-2);
 
     SetColor(DarkGray);
-    Line(x+1, y+height-1, x+width-1, y+height-1);
-    Line(x+width-1, y+1, x+width-1, y+height-1);
+    drawPos.Line(1, height-1, width-1, height-1);
+    drawPos.Line(width-1, 1, width-1, height-1);
     SetColor(Black);
-    Line(x, y+height, x+width, y+height);
-    Line(x+width, y, x+width, y+height);
+    drawPos.Line(0, height, width, height);
+    drawPos.Line(width, 0, width, height);
 
     SetColor(LightGray);
-    Rectangle(x+2, y+2, x+width-2, y+height-2);
+    drawPos.Rectangle(2, 2, width-2, height-2);
 
     SetFillStyle(SolidFill, Blue);
-    Bar(x+3, y+3, x+width-3, y+3+captionWidth);
+    drawPos.Bar(3, 3, width-3, 3+captionWidth);
 
     SetColor(White);
-    SetInnerViewport(viewPort, x+3, y+3, x+width-3, y+3+captionWidth, ClipOn);
+    drawPos.Clip(3, 3, width-6, captionWidth, captionDrawPos);
     SetTextJustify(LeftText, CenterText);
-    OutTextXY(4, captionWidth div 2, title);
-    SetViewSettings(viewPort);
+    captionDrawPos.OutTextXY(4, captionWidth div 2, title);
 
     SetFillStyle(SolidFill, LightGray);
-    Bar(x+3, y+3+captionWidth, x+width-3, y+height-3);
+    drawPos.Bar(3, 3+captionWidth, width-3, height-3);
 
-    TParent.Draw;
-
-    GetViewSettings(viewPort);
+    TParent.Draw(drawPos);
   end;
 end;
 

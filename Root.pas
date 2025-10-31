@@ -1,7 +1,7 @@
 unit Root;
 
 interface
-uses Control;
+uses Control, DrawUtil;
 
 type
   PRoot = ^TRoot;
@@ -9,7 +9,7 @@ type
     public
       constructor Create;
 
-      procedure Draw; virtual;
+      procedure Draw(const drawPos: TDrawPos); virtual;
 
       procedure Run;
   end;
@@ -23,19 +23,19 @@ begin
   rect.Assign(0, 0, GetMaxX, GetMaxY);
 end;
 
-procedure TRoot.Draw;
+procedure TRoot.Draw(const drawPos: TDrawPos);
 begin
-  SetViewPort(0, 0, GetMaxX, GetMaxY, ClipOff);
   SetFillStyle(CloseDotFill, DarkGray);
-  Bar(0, 0, GetMaxX, GetMaxY);
+  drawPos.Bar(0, 0, rect.width, rect.height);
 
-  TParent.Draw;
+  TParent.Draw(drawPos);
 end;
 
 procedure TRoot.Run;
 var
   Driver, Mode: Integer;
   prevMouse, mouse: MouseState;
+  drawPos: TDrawPos;
 
 begin
   Driver := Detect;
@@ -47,9 +47,10 @@ begin
   end;
 
   rect.Assign(0, 0, GetMaxX, GetMaxY);
+  drawPos.ResetToScreen;
 
   FillChar(prevMouse, SizeOf(prevMouse), 0);
-  Draw;
+  Draw(drawPos);
   ShowCursor(true);
   while not KeyPressed
   do begin

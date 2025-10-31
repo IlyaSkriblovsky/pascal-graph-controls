@@ -1,7 +1,7 @@
 unit Button;
 
 interface
-uses Control, Rect;
+uses Control, Rect, DrawUtil;
 
 type
   PButton = ^TButton;
@@ -13,7 +13,7 @@ type
 
       constructor Create(x, y, width, height: integer; title_: string);
 
-      procedure Draw; virtual;
+      procedure Draw(const drawPos: TDrawPos); virtual;
       procedure MouseDown(x, y: integer); virtual;
       procedure MouseUp(x, y: integer); virtual;
       procedure Click; virtual;
@@ -48,9 +48,8 @@ begin
   _disabled := disabled;
 end;
 
-procedure TButton.Draw;
+procedure TButton.Draw(const drawPos: TDrawPos);
 var
-  viewPort: ViewPortType;
   textOffset: integer;
   textX, textY: integer;
 begin
@@ -58,51 +57,49 @@ begin
     if pressed
     then begin
       SetColor(Black);
-      Line(x, y, x+width, y);
-      Line(x, y, x, y+height);
+      drawPos.Line(0, 0, width, 0);
+      drawPos.Line(0, 0, 0, height);
 
       SetColor(DarkGray);
-      Line(x+1, y+1, x+1, y+height-1);
-      Line(x+1, y+1, x+width-1, y+1);
+      drawPos.Line(1, 1, 1, height-1);
+      drawPos.Line(1, 1, width-1, 1);
 
       SetColor(White);
-      Line(x+width, y, x+width, y+height);
-      Line(x, y+height, x+width, y+height);
+      drawPos.Line(width, 0, width, height);
+      drawPos.Line(0, height, width, height);
 
       SetFillStyle(SolidFill, LightGray);
-      Bar(x+2, y+2, x+width-1, y+height-1);
+      drawPos.Bar(2, 2, width-1, height-1);
     end
     else begin
       SetColor(White);
-      Line(x, y, x+width, y);
-      Line(x, y, x, y+height);
+      drawPos.Line(0, 0, width, 0);
+      drawPos.Line(0, 0, 0, 0+height);
 
       SetColor(DarkGray);
-      Line(x+width-1, y+1, x+width-1, y+height);
-      Line(x+1, y+height-1, x+width, y+height-1);
+      drawPos.Line(width-1, 1, width-1, height);
+      drawPos.Line(1, height-1, width, height-1);
 
       SetColor(Black);
-      Line(x+width, y, x+width, y+height);
-      Line(x, y+height, x+width, y+height);
+      drawPos.Line(width, 0, width, height);
+      drawPos.Line(0, height, width, height);
 
       SetFillStyle(SolidFill, LightGray);
-      Bar(x+1, y+1, x+width-2, y+height-2);
+      drawPos.Bar(1, 1, width-2, height-2);
     end;
 
-    SetInnerViewport(viewPort, x+2, y+2, x+width-2, y+height-2, ClipOn);
     SetTextJustify(LeftText, CenterText);
     textOffset := integer(pressed)*2;
     textX := MaxI(0, (width - TextWidth(title)) div 2) + textOffset;
-    textY := height div 2 -1 + textOffset;
+    textY := height div 2 + textOffset;
     if _disabled
     then begin
       SetColor(White);
-      OutTextXY(textX+1, textY+1, title);
+      drawPos.OutTextXY(textX+1, textY+1, title);
       SetColor(DarkGray);
     end
     else SetColor(Black);
-    OutTextXY(textX, textY, title);
-    SetViewSettings(viewPort);
+    drawPos.OutTextXY(textX, textY, title);
   end;
 end;
 
