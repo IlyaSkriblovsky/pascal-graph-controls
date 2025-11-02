@@ -20,6 +20,7 @@ type
 
   TRadioButton = object(TControl)
     public
+      pressed: boolean;
       checked: boolean;
       title: string;
       group: PRadioGroup;
@@ -33,7 +34,9 @@ type
       );
       destructor Destroy; virtual;
 
-      procedure Draw(const drawPos: TDrawPos); virtual;
+      procedure Draw(const drawPos: TDrawPos); virtual;      
+      procedure MouseDown(x, y: integer); virtual;
+      procedure MouseUp(x, y: integer); virtual;
       procedure Click; virtual;
       procedure SetChecked(value: boolean);
 
@@ -83,6 +86,7 @@ begin
   TControl.Create(x, y, width, height);
   title := title_;
   group := group_;
+  pressed := false;
   checked := false;
   onChange := nil;
 
@@ -104,7 +108,9 @@ var
   labelWidth: integer;
 begin
   SetColor(DarkGray);
-  SetFillStyle(SolidFill, White);
+  if pressed
+  then SetFillStyle(SolidFill, LightGray)
+  else SetFillStyle(SolidFill, White);
   drawPos.FillEllipse(RADIUS, RADIUS, RADIUS, RADIUS);
 
   SetColor(Black);
@@ -126,6 +132,20 @@ begin
   SetTextJustify(LeftText, CenterText);
   SetColor(Black);
   labelPos.OutTextXY(0, (rect.height+1) div 2, title);
+end;
+
+procedure TRadioButton.MouseDown(x, y: integer);
+begin
+  TControl.MouseDown(x, y);
+  pressed := true;
+  Redraw;
+end;
+
+procedure TRadioButton.MouseUp(x, y: integer);
+begin
+  TControl.MouseUp(x, y);
+  pressed := false;
+  Redraw;
 end;
 
 procedure TRadioButton.Click;

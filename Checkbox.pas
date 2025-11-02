@@ -7,6 +7,7 @@ type
   PCheckbox = ^TCheckbox;
   TCheckbox = object(TControl)
     public
+      pressed: boolean;
       checked: boolean;
       title: string;
       onChange: procedure(sender: PCheckbox);
@@ -14,6 +15,8 @@ type
       constructor Create(x, y, width, height: integer; title_: string; checked_: boolean);
 
       procedure Draw(const drawPos: TDrawPos); virtual;
+      procedure MouseDown(x, y: integer); virtual;
+      procedure MouseUp(x, y: integer); virtual;
       procedure Click; virtual;
   end;
 
@@ -28,6 +31,7 @@ constructor TCheckbox.Create(x, y, width, height: integer; title_: string; check
 begin
   TControl.Create(x, y, width, height);
   title := title_;
+  pressed := false;
   checked := checked_;
   onChange := nil;
 end;
@@ -53,7 +57,9 @@ begin
   drawPos.Line(BOX_SIZE-1, 0, BOX_SIZE-1, BOX_SIZE-1);
   drawPos.Line(0, BOX_SIZE-1, BOX_SIZE-1, BOX_SIZE-1);
 
-  SetFillStyle(SolidFill, White);
+  if pressed
+  then SetFillStyle(SolidFill, LightGray)
+  else SetFillStyle(SolidFill, White);
   drawPos.Bar(2, 2, BOX_SIZE - 3, BOX_SIZE - 3);
 
   if checked
@@ -69,6 +75,19 @@ begin
   SetTextJustify(LeftText, CenterText);
   SetColor(Black);
   labelPos.OutTextXY(0, (rect.height+1) div 2, title);
+end;
+
+procedure TCheckbox.MouseDown(x, y: integer);
+begin
+  TControl.MouseDown(x, y);
+  pressed := true;
+  Redraw;
+end;
+procedure TCheckbox.MouseUp(x, y: integer);
+begin
+  TControl.MouseDown(x, y);
+  pressed := false;
+  Redraw;
 end;
 
 procedure TCheckbox.Click;
