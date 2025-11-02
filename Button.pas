@@ -9,7 +9,7 @@ type
     public
       title: string;
       pressed: boolean;
-      onClick: procedure;
+      onClick: procedure(sender: PButton);
 
       constructor Create(x, y, width, height: integer; title_: string);
 
@@ -124,7 +124,7 @@ end;
 procedure TButton.Click;
 begin
   if not _disabled and Assigned(onClick)
-  then onClick;
+  then onClick(@self);
 end;
 
 end.

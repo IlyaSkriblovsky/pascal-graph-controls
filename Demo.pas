@@ -1,14 +1,27 @@
-uses Control, Window, Button, Rect, CRT, Root, Graph, Checkbox, RadioButton;
+uses Control, Window, Button, Rect, CRT, Root, Graph, Checkbox, RadioBtn;
+
+type
+  PWindowData = ^TWindowData;
+  TWindowData = object
+    radioGroup: TRadioGroup;
+    beepHz: integer;
+
+    constructor Create;
+  end;
 
 var
   r: TRoot;
   btn: PButton;
-  radioSlow: PRadioButton;
-  radioFast: PRadioButton;
-  radioGroup: TRadioGroup;
 
   nextWinX, nextWinY: integer;
   newWindowBeepHz: integer;
+
+
+constructor TWindowData.Create;
+begin
+  radioGroup.Create;
+  beepHz := 440;
+end;
 
 procedure Beep(hz: integer; duration: integer);
 begin
@@ -19,6 +32,7 @@ end;
 
 procedure OnCloseWindow(window: PWindow); far;
 begin
+  Dispose(PWindowData(window^.userData));
   r.RemoveChild(window);
   r.Redraw;
 end;
@@ -33,14 +47,19 @@ begin
 end;
 
 procedure OnRadioChange(sender: PRadioButton); far;
+var
+  winData: PWindowData;
 begin
   if not sender^.checked
   then Exit;
 
-  if sender = radioSlow
-  then newWindowBeepHz := 440
-  else if sender = radioFast
-       then newWindowBeepHz := 880;
+  winData := PWindowData(sender^.GetParent^.userData);
+  winData^.beepHz := integer(sender^.userData);
+end;
+
+procedure OnBeepButton(sender: PButton); far;
+begin
+  Beep(PWindowData(sender^.GetParent^.userData)^.beepHz, 50);
 end;
 
 function CreateWindow: PWindow;
@@ -48,30 +67,44 @@ var
   win: PWindow;
   btn: PButton;
   cbx: PCheckbox;
+  rbx: PRadioButton;
+
+  winData: PWindowData;
 
 begin
   win := New(PWindow, Create(nextWinX, nextWinY, 250, 120, 'New Window'));
   win^.onClose := OnCloseWindow;
 
-  btn := New(PButton, Create(30, 30, 80, 24, 'Click me'));
-  btn^.SetDisabled(true);
+  winData := New(PWindowData, Create);
+  win^.userData := winData;
+
+  btn := New(PButton, Create(30, 30, 80, 24, 'Beep'));
+  btn^.SetDisabled(false);
+  btn^.onClick := OnBeepButton;
   win^.AddChild(btn);
 
-  cbx := New(PCheckbox, Create(30, 70, 120, 13, 'Check me', false));
+  cbx := New(PCheckbox, Create(30, 70, 120, 13, 'Enabled', true));
   cbx^.userData := btn;
   cbx^.onChange := OnCheckboxChange;
   win^.AddChild(cbx);
 
-  r.AddChild(win);
+  rbx := New(PRadioButton, Create(10, 10, 80, 13, 'Low', @winData^.radioGroup, true));
+  rbx^.onChange := OnRadioChange;
+  rbx^.userData := Pointer(440);
+  win^.AddChild(rbx);
 
-  Beep(newWindowBeepHz, 120);
+  rbx := New(PRadioButton, Create(90, 10, 80, 13, 'High', @winData^.radioGroup, false));
+  rbx^.onChange := OnRadioChange;
+  rbx^.userData := Pointer(880);
+  win^.AddChild(rbx);
+
+  r.AddChild(win);
 
   nextWinX := (nextWinX + 20) mod (GetMaxX - 250);
   nextWinY := (nextWinY + 20) mod (GetMaxY - 120);
-
 end;
 
-procedure OnNewWindow; far;
+procedure OnNewWindow(sender: PButton); far;
 begin
   CreateWindow;
   r.Redraw;
@@ -88,16 +121,7 @@ begin
   btn^.onClick := OnNewWindow;
   r.AddChild(btn);
 
-  radioGroup.Create;
-  radioSlow := New(PRadioButton, Create(200, 140, 160, 16, 'Low beep (440 Hz)', @radioGroup, true));
-  radioSlow^.onChange := OnRadioChange;
-  r.AddChild(radioSlow);
-
-  radioFast := New(PRadioButton, Create(200, 160, 160, 16, 'High beep (880 Hz)', @radioGroup, false));
-  radioFast^.onChange := OnRadioChange;
-  r.AddChild(radioFast);
-
-  CreateWindow;
+  {CreateWindow;}
 
   r.Run;
 

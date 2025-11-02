@@ -1,4 +1,4 @@
-unit RadioButton;
+unit RadioBtn;
 
 interface
 uses Control, Rect, DrawUtil;
@@ -8,13 +8,14 @@ type
   PRadioGroup = ^TRadioGroup;
 
   TRadioGroup = object
-    private
-      selected: PRadioButton;
     public
       constructor Create;
 
       procedure Select(button: PRadioButton);
       function GetSelected: PRadioButton;
+      
+    private
+      selected: PRadioButton;
   end;
 
   TRadioButton = object(TControl)
@@ -35,13 +36,17 @@ type
       procedure Draw(const drawPos: TDrawPos); virtual;
       procedure Click; virtual;
       procedure SetChecked(value: boolean);
+
+    private
+      procedure HandleCheckedChange(value: boolean);
   end;
 
 implementation
 uses Graph, Utils;
 
 const
-  DEFAULT_RADIUS = 6;
+  RADIUS = 6;
+  DIAMETER = 12;
   GAP = 4;
 
 constructor TRadioGroup.Create;
@@ -55,22 +60,12 @@ begin
   then Exit;
 
   if Assigned(selected)
-  then begin
-    selected^.checked := false;
-    if Assigned(selected^.onChange)
-    then selected^.onChange(selected);
-    selected^.Redraw;
-  end;
+  then selected^.HandleCheckedChange(false);
 
   selected := button;
 
   if Assigned(selected)
-  then begin
-    selected^.checked := true;
-    if Assigned(selected^.onChange)
-    then selected^.onChange(selected);
-    selected^.Redraw;
-  end;
+  then selected^.HandleCheckedChange(true);
 end;
 
 function TRadioGroup.GetSelected: PRadioButton;
@@ -107,37 +102,28 @@ end;
 procedure TRadioButton.Draw(const drawPos: TDrawPos);
 var
   labelPos: TDrawPos;
-  radius: integer;
-  diameter: integer;
-  centerY: integer;
-  drawX, drawY: integer;
   labelWidth: integer;
 begin
-  radius := MinI(DEFAULT_RADIUS, MaxI(2, rect.height div 2));
-  diameter := radius * 2;
-  centerY := rect.height div 2;
-  if rect.height > diameter
-  then centerY := ClipI(centerY, radius, rect.height - radius);
-
-  drawX := drawPos.x - drawPos.clipX1 + radius;
-  drawY := drawPos.y - drawPos.clipY1 + centerY;
-
-  SetViewPort(drawPos.clipX1, drawPos.clipY1, drawPos.clipX2, drawPos.clipY2, ClipOn);
-
   SetColor(DarkGray);
-  Circle(drawX, drawY, radius);
   SetFillStyle(SolidFill, White);
-  FillEllipse(drawX, drawY, MaxI(1, radius - 1), MaxI(1, radius - 1));
+  drawPos.FillEllipse(RADIUS, RADIUS, RADIUS, RADIUS);
+
+  SetColor(Black);
+  drawPos.Arc(RADIUS, RADIUS, 45, 225, RADIUS-1);
+  SetColor(White);
+  drawPos.Arc(RADIUS, RADIUS, 225, 405, RADIUS);
+  SetColor(LightGray);
+  drawPos.Arc(RADIUS, RADIUS, 225, 405, RADIUS-1);
 
   if checked
   then begin
     SetColor(Black);
     SetFillStyle(SolidFill, Black);
-    FillEllipse(drawX, drawY, MaxI(1, radius - 3), MaxI(1, radius - 3));
+    drawPos.FillEllipse(RADIUS, RADIUS, RADIUS-4, RADIUS-4);
   end;
 
-  labelWidth := MaxI(0, rect.width - (diameter + GAP));
-  drawPos.Clip(diameter + GAP, 0, labelWidth, rect.height, labelPos);
+  labelWidth := MaxI(0, rect.width - (DIAMETER + GAP));
+  drawPos.Clip(DIAMETER + GAP, 0, labelWidth, rect.height, labelPos);
   SetTextJustify(LeftText, CenterText);
   SetColor(Black);
   labelPos.OutTextXY(0, (rect.height+1) div 2, title);
@@ -150,39 +136,18 @@ end;
 
 procedure TRadioButton.SetChecked(value: boolean);
 begin
-  if value
-  then begin
-    if Assigned(group)
-    then group^.Select(@self)
-    else if not checked
-         then begin
-           checked := true;
-           if Assigned(onChange)
-           then onChange(@self);
-           Redraw;
-         end;
-  end
-  else begin
-    if Assigned(group)
-    then begin
-      if group^.GetSelected = @self
-      then group^.Select(nil)
-      else if checked
-           then begin
-             checked := false;
-             if Assigned(onChange)
-             then onChange(@self);
-             Redraw;
-           end;
-    end
-    else if checked
-         then begin
-           checked := false;
-           if Assigned(onChange)
-           then onChange(@self);
-           Redraw;
-         end;
-  end;
+  if Assigned(group)
+  then group^.Select(@self)
+  else if not checked
+        then HandleCheckedChange(true);
+end;
+
+procedure TRadioButton.HandleCheckedChange(value: boolean);
+begin
+  checked := value;
+  if Assigned(onChange)
+  then onChange(@self);
+  Redraw;
 end;
 
 end.
