@@ -38,9 +38,9 @@ type
       procedure MouseDown(x, y: integer); virtual;
       procedure MouseUp(x, y: integer); virtual;
       procedure Click; virtual;
-      procedure SetChecked(value: boolean);
 
     private
+      procedure SetChecked;
       procedure HandleCheckedChange(value: boolean);
   end;
 
@@ -91,7 +91,7 @@ begin
   onChange := nil;
 
   if checked_
-  then SetChecked(true)
+  then SetChecked
   else checked := false;
 end;
 
@@ -150,10 +150,10 @@ end;
 
 procedure TRadioButton.Click;
 begin
-  SetChecked(true);
+  SetChecked;
 end;
 
-procedure TRadioButton.SetChecked(value: boolean);
+procedure TRadioButton.SetChecked;
 begin
   if Assigned(group)
   then group^.Select(@self)
