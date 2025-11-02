@@ -1,10 +1,14 @@
-uses Control, Window, Button, Rect, CRT, Root, Graph, Checkbox;
+uses Control, Window, Button, Rect, CRT, Root, Graph, Checkbox, RadioButton;
 
 var
   r: TRoot;
   btn: PButton;
+  radioSlow: PRadioButton;
+  radioFast: PRadioButton;
+  radioGroup: TRadioGroup;
 
   nextWinX, nextWinY: integer;
+  newWindowBeepHz: integer;
 
 procedure Beep(hz: integer; duration: integer);
 begin
@@ -28,6 +32,17 @@ begin
   btn^.Redraw;
 end;
 
+procedure OnRadioChange(sender: PRadioButton); far;
+begin
+  if not sender^.checked
+  then Exit;
+
+  if sender = radioSlow
+  then newWindowBeepHz := 440
+  else if sender = radioFast
+       then newWindowBeepHz := 880;
+end;
+
 function CreateWindow: PWindow;
 var
   win: PWindow;
@@ -48,7 +63,9 @@ begin
   win^.AddChild(cbx);
 
   r.AddChild(win);
-  
+
+  Beep(newWindowBeepHz, 120);
+
   nextWinX := (nextWinX + 20) mod (GetMaxX - 250);
   nextWinY := (nextWinY + 20) mod (GetMaxY - 120);
 
@@ -63,12 +80,22 @@ end;
 begin
   nextWinX := 150;
   nextWinY := 150;
+  newWindowBeepHz := 440;
 
   r.Create;
 
   btn := New(PButton, Create(200, 100, 120, 24, 'New window'));
   btn^.onClick := OnNewWindow;
   r.AddChild(btn);
+
+  radioGroup.Create;
+  radioSlow := New(PRadioButton, Create(200, 140, 160, 16, 'Low beep (440 Hz)', @radioGroup, true));
+  radioSlow^.onChange := OnRadioChange;
+  r.AddChild(radioSlow);
+
+  radioFast := New(PRadioButton, Create(200, 160, 160, 16, 'High beep (880 Hz)', @radioGroup, false));
+  radioFast^.onChange := OnRadioChange;
+  r.AddChild(radioFast);
 
   CreateWindow;
 
