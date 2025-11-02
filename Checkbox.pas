@@ -26,8 +26,7 @@ const
 
 constructor TCheckbox.Create(x, y, width, height: integer; title_: string; checked_: boolean);
 begin
-  TControl.Create;
-  rect.Assign(x, y, width, height);
+  TControl.Create(x, y, width, height);
   title := title_;
   checked := checked_;
   onChange := nil;

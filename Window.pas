@@ -82,8 +82,7 @@ end;
 
 constructor TWindow.Create(x, y, width, height: integer; title_: string);
 begin
-  TParent.Create;
-  rect.Assign(x, y, width, height);
+  TParent.Create(x, y, width, height);
   title := title_;
 
   onClose := nil;

@@ -30,8 +30,7 @@ uses Graph, Utils;
 
 constructor TButton.Create(x, y, width, height: integer; title_: string);
 begin
-  TControl.Create;
-  rect.Assign(x, y, width, height);
+  TControl.Create(x, y, width, height);
   title := title_;
   pressed := false;
   _disabled := false;

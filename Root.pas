@@ -19,8 +19,7 @@ uses Graph, Mouse, CRT;
 
 constructor TRoot.Create;
 begin
-  TParent.Create;
-  rect.Assign(0, 0, GetMaxX, GetMaxY);
+  TParent.Create(0, 0, GetMaxX, GetMaxY);
 end;
 
 procedure TRoot.Draw(const drawPos: TDrawPos);

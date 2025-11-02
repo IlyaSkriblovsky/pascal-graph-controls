@@ -80,8 +80,7 @@ constructor TRadioButton.Create(
   checked_: boolean
 );
 begin
-  TControl.Create;
-  rect.Assign(x, y, width, height);
+  TControl.Create(x, y, width, height);
   title := title_;
   group := group_;
   checked := false;

@@ -36,7 +36,7 @@ type
       rect: TRect;
       userData: Pointer;
 
-      constructor Create;
+      constructor Create(x, y, width, height: integer);
       destructor Destroy;
 
       procedure SetDrawPos(var drawPos: TDrawPos);
@@ -60,7 +60,7 @@ type
     public
       mouseCapture: PControl;
 
-      constructor Create;
+      constructor Create(x, y, width, height: integer);
       destructor Destroy;
 
       procedure GetMargins(var margins: TMargins); virtual;
@@ -190,8 +190,9 @@ end;
 
 { CONTROL }
 
-constructor TControl.Create;
+constructor TControl.Create(x, y, width, height: integer);
 begin
+  rect.Assign(x, y, width, height);
   _parent := nil;
   _obeysParentMargins := true;
   userData := nil;
@@ -251,9 +252,9 @@ type
     capture: PControl;
   end;
 
-constructor TParent.Create;
+constructor TParent.Create(x, y, width, height: integer);
 begin
-  TControl.Create;
+  TControl.Create(x, y, width, height);
   children.Create;
   mouseCapture := nil;
 end;
