@@ -21,6 +21,8 @@ type
     procedure Line(x1, y1, x2, y2: integer);
     procedure Rectangle(x1, y1, x2, y2: integer);
     procedure Bar(x1, y1, x2, y2: integer);
+    procedure Arc(x_, y_: integer; stAngle, endAngle, radius: word);
+    procedure FillEllipse(xc, yc, rx, ry: integer);
     procedure OutTextXY(tx, ty: integer; text: string);
   end;
 
@@ -91,6 +93,28 @@ begin
     y - clipY1 + y1, 
     x - clipX1 + x2, 
     y - clipY1 + y2
+  );
+end;
+procedure TDrawPos.Arc(x_, y_: integer; stAngle, endAngle, radius: word);
+begin
+  SetViewPort(clipX1, clipY1, clipX2, clipY2, ClipOn);
+  Graph.Arc(
+    x - clipX1 + x_, 
+    y - clipY1 + y_, 
+    stAngle, 
+    endAngle, 
+    radius
+  );
+end;
+
+procedure TDrawPos.FillEllipse(xc, yc, rx, ry: integer);
+begin
+  SetViewPort(clipX1, clipY1, clipX2, clipY2, ClipOn);
+  Graph.FillEllipse(  
+    x - clipX1 + xc, 
+    y - clipY1 + yc, 
+    rx, 
+    ry
   );
 end;
 
